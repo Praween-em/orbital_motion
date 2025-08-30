@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orbital Motion Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(to bottom, #1a1a40, #0a0a2a);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            border: 1px solid #2a4b8d;
+        }
+        
+        h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            color: #4af;
+            text-shadow: 0 0 15px rgba(0, 150, 255, 0.5);
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            color: #aad;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        .simulation-section {
+            flex: 1;
+            min-width: 300px;
+            max-width: 800px; /* Added for better layout */
+            margin: 0 auto; /* Center the single section */
+            background: rgba(0, 0, 30, 0.6);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid #2a4b8d;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+        
+        .simulation-section h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #6df;
+            border-bottom: 2px solid #2a4b8d;
+            padding-bottom: 10px;
+        }
+        
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 400px; /* Increased height for orbit */
+            margin-bottom: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #000;
+            border: 2px solid #2a4b8d;
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .controls { margin-bottom: 20px; }
+        .control-group { margin-bottom: 15px; }
+        .control-group label { display: block; margin-bottom: 5px; color: #ccd; }
+        .slider-container { display: flex; align-items: center; }
+        
+        .slider-container input[type="range"] {
+            flex: 1;
+            height: 8px;
+            -webkit-appearance: none;
+            background: #2a4b8d;
+            border-radius: 5px;
+            outline: none;
+        }
+        
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4af;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 150, 255, 0.5);
+        }
+        
+        .value-display { min-width: 80px; text-align: right; color: #6df; font-weight: bold; margin-left: 10px; }
+        .button-group { display: flex; gap: 10px; margin-top: 20px; }
+        button { flex: 1; background: linear-gradient(to bottom, #2a4b8d, #1a3a7d); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: all 0.3s; box-shadow: 0 0 10px rgba(0, 0, 0, 0.3); }
+        button:hover { background: linear-gradient(to bottom, #3a5b9d, #2a4a8d); box-shadow: 0 0 15px rgba(0, 150, 255, 0.4); }
+        .metrics { background: rgba(0, 20, 40, 0.5); padding: 15px; border-radius: 10px; margin-top: 20px; }
+        .metric { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .metric .label { color: #ccd; }
+        .metric .value { color: #6df; font-weight: bold; }
+        .explanation { background: rgba(0, 10, 30, 0.5); padding: 15px; border-radius: 10px; margin-top: 20px; font-size: 14px; line-height: 1.6; }
+        .explanation h3 { color: #4af; margin-bottom: 10px; }
+        .formula { background: rgba(0, 0, 0, 0.3); padding: 10px; border-radius: 8px; margin: 10px 0; font-family: 'Courier New', monospace; color: #aad; text-align: center; border: 1px solid #2a4b8d; }
+        
+        @media (max-width: 768px) {
+            .container { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Orbital Motion & Satellites</h1>
+        <p class="subtitle">A demonstration of orbital mechanics and satellite behavior.</p>
+    </div>
+    
+    <div class="container">
+        <div class="simulation-section">
+            <h2>Orbital Motion & Satellites</h2>
+            <div class="canvas-container">
+                <canvas id="orbitCanvas"></canvas>
+            </div>
+            <div class="controls">
+                <div class="control-group">
+                    <label for="altitude">Altitude</label>
+                    <div class="slider-container">
+                        <input type="range" id="altitude" min="200" max="40000" value="400" step="100">
+                        <span class="value-display" id="altitudeValue">400 km</span>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label for="speed">Initial Speed</label>
+                    <div class="slider-container">
+                        <input type="range" id="speed" min="1000" max="12000" value="7670" step="10">
+                        <span class="value-display" id="speedValue">7670 m/s</span>
+                    </div>
+                </div>
+            </div>
+            <div class="button-group">
+                <button id="resetOrbitBtn">Reset</button>
+            </div>
+            <div class="metrics">
+                <div class="metric"><span class="label">Current Altitude:</span><span class="value" id="currentAltitudeValue">- km</span></div>
+                <div class="metric"><span class="label">Current Speed:</span><span class="value" id="currentSpeedValue">- m/s</span></div>
+                <div class="metric"><span class="label">Orbital Period:</span><span class="value" id="periodValue">- min</span></div>
+                <div class="metric"><span class="label">Orbit Type:</span><span class="value" id="orbitTypeValue">-</span></div>
+            </div>
+            <div class="explanation">
+                <h3>Orbital Mechanics</h3>
+                <p>A satellite orbits when its velocity is perfectly balanced with the gravitational force pulling it toward the planet. This gravity provides the required centripetal force.</p>
+                <div class="formula">v = √(GM/r)</div>
+                <p>For a stable circular orbit, the initial speed must match the value from this formula. Try to find the correct speed for your chosen altitude!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const G = 6.67430e-11;
+        const EARTH_MASS = 5.972e24;
+        const EARTH_RADIUS = 6.371e6;
+
+        const orbitCanvas = document.getElementById('orbitCanvas');
+        const oCtx = orbitCanvas.getContext('2d');
+
+        let satellite = {};
+        let animationFrameId = null;
+
+        function setCanvasDimensions() {
+            const container = document.querySelector('.canvas-container');
+            const canvas = container.querySelector('canvas');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            drawOrbit();
+        }
+
+        setCanvasDimensions();
+        window.addEventListener('resize', setCanvasDimensions);
+
+        function resetOrbit() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+
+            const altitude = parseInt(document.getElementById('altitude').value) * 1000;
+            const speed = parseInt(document.getElementById('speed').value);
+
+            satellite = {
+                x: EARTH_RADIUS + altitude,
+                y: 0,
+                vx: 0,
+                vy: speed,
+                path: []
+            };
+            
+            document.getElementById('altitudeValue').textContent = (altitude/1000) + ' km';
+            document.getElementById('speedValue').textContent = speed + ' m/s';
+
+            animationFrameId = requestAnimationFrame(animateOrbit);
+        }
+
+        function drawOrbit() {
+            oCtx.clearRect(0, 0, orbitCanvas.width, orbitCanvas.height);
+            oCtx.fillStyle = '#000';
+            oCtx.fillRect(0, 0, orbitCanvas.width, orbitCanvas.height);
+
+            const centerX = orbitCanvas.width / 2;
+            const centerY = orbitCanvas.height / 2;
+            const maxOrbitRadius = EARTH_RADIUS + 40000 * 1000; // from slider max
+            const viewScale = (orbitCanvas.width / 2.5) / maxOrbitRadius;
+
+            // Draw Earth
+            const earthRadiusPixels = EARTH_RADIUS * viewScale;
+            oCtx.beginPath();
+            oCtx.arc(centerX, centerY, earthRadiusPixels, 0, Math.PI * 2);
+            oCtx.fillStyle = '#2266cc';
+            oCtx.fill();
+
+            // Draw Path
+            if (satellite.path && satellite.path.length > 1) {
+                oCtx.beginPath();
+                oCtx.moveTo(centerX + satellite.path[0].x * viewScale, centerY + satellite.path[0].y * viewScale);
+                for (let i = 1; i < satellite.path.length; i++) {
+                    oCtx.lineTo(centerX + satellite.path[i].x * viewScale, centerY + satellite.path[i].y * viewScale);
+                }
+                oCtx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                oCtx.stroke();
+            }
+
+            // Draw Satellite
+            const satX = centerX + satellite.x * viewScale;
+            const satY = centerY + satellite.y * viewScale;
+            oCtx.beginPath();
+            oCtx.arc(satX, satY, 5, 0, Math.PI * 2);
+            oCtx.fillStyle = '#f4a';
+            oCtx.fill();
+        }
+
+        function updateMetrics() {
+            const r = Math.sqrt(satellite.x**2 + satellite.y**2);
+            const speed = Math.sqrt(satellite.vx**2 + satellite.vy**2);
+            const altitude = (r - EARTH_RADIUS) / 1000;
+
+            document.getElementById('currentAltitudeValue').textContent = altitude.toFixed(0) + ' km';
+            document.getElementById('currentSpeedValue').textContent = speed.toFixed(0) + ' m/s';
+
+            const a = G * EARTH_MASS / r**2; // semi-major axis
+            const period = 2 * Math.PI * Math.sqrt(r**3 / (G * EARTH_MASS)) / 60; // in minutes
+            document.getElementById('periodValue').textContent = period > 0 && isFinite(period) ? period.toFixed(1) + ' min' : '-';
+
+            const escapeVelocity = Math.sqrt(2 * G * EARTH_MASS / r);
+            const circularVelocity = Math.sqrt(G * EARTH_MASS / r);
+            let orbitType = 'Elliptical';
+            if (Math.abs(speed - circularVelocity) < 100) orbitType = 'Circular';
+            if (speed > escapeVelocity) orbitType = 'Hyperbolic (Escape)';
+            if (speed < circularVelocity * 0.8) orbitType = 'Sub-orbital (Crash)';
+            document.getElementById('orbitTypeValue').textContent = orbitType;
+        }
+
+        function animateOrbit() {
+            const dt = 50; // time step in seconds
+
+            for (let i = 0; i < 10; i++) { // Increase iterations for accuracy
+                const r = Math.sqrt(satellite.x**2 + satellite.y**2);
+                const force = G * EARTH_MASS / (r**2);
+                const ax = -force * (satellite.x / r);
+                const ay = -force * (satellite.y / r);
+
+                satellite.vx += ax * dt / 10;
+                satellite.vy += ay * dt / 10;
+                satellite.x += satellite.vx * dt / 10;
+                satellite.y += satellite.vy * dt / 10;
+            }
+
+            satellite.path.push({ x: satellite.x, y: satellite.y });
+            if (satellite.path.length > 2000) {
+                satellite.path.shift();
+            }
+
+            drawOrbit();
+            updateMetrics();
+
+            const r = Math.sqrt(satellite.x**2 + satellite.y**2);
+            if (r < EARTH_RADIUS) { // Crash condition
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            if (animationFrameId) {
+                animationFrameId = requestAnimationFrame(animateOrbit);
+            }
+        }
+
+        document.getElementById('altitude').addEventListener('input', e => document.getElementById('altitudeValue').textContent = e.target.value + ' km');
+        document.getElementById('speed').addEventListener('input', e => document.getElementById('speedValue').textContent = e.target.value + ' m/s');
+        document.getElementById('resetOrbitBtn').addEventListener('click', resetOrbit);
+
+        resetOrbit();
+    </script>
+</body>
+</html>

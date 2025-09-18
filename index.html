@@ -150,25 +150,30 @@
                 <div class="control-group">
                     <label for="speed">Initial Speed</label>
                     <div class="slider-container">
-                        <input type="range" id="speed" min="1000" max="12000" value="7670" step="10">
-                        <span class="value-display" id="speedValue">7670 km/s</span>
+                        <input type="range" id="speed" min="1" max="15" value="7.67" step="0.01">
+                        <span class="value-display" id="speedValue">7.67 km/s</span>
                     </div>
                 </div>
             </div>
             <div class="button-group">
                 <button id="resetOrbitBtn">Reset</button>
+                <button id="circularOrbitBtn">Circular Orbit</button>
+                <button id="escapeVelocityBtn">Escape Velocity</button>
             </div>
             <div class="metrics">
                 <div class="metric"><span class="label">Current Altitude:</span><span class="value" id="currentAltitudeValue">- km</span></div>
-                <div class="metric"><span class="label">Current Speed:</span><span class="value" id="currentSpeedValue">- m/s</span></div>
+                <div class="metric"><span class="label">Current Speed:</span><span class="value" id="currentSpeedValue">- km/s</span></div>
                 <div class="metric"><span class="label">Orbital Period:</span><span class="value" id="periodValue">- min</span></div>
                 <div class="metric"><span class="label">Orbit Type:</span><span class="value" id="orbitTypeValue">-</span></div>
+                <div class="metric"><span class="label">Escape Velocity:</span><span class="value" id="escapeVelocityValue">- km/s</span></div>
             </div>
             <div class="explanation">
                 <h3>Orbital Mechanics</h3>
                 <p>A satellite orbits when its velocity is perfectly balanced with the gravitational force pulling it toward the planet. This gravity provides the required centripetal force.</p>
                 <div class="formula">v = √(GM/r)</div>
                 <p>For a stable circular orbit, the initial speed must match the value from this formula. Try to find the correct speed for your chosen altitude!</p>
+                <p>Escape velocity is the minimum speed needed to break free from a planet's gravitational pull:</p>
+                <div class="formula">v_escape = √(2GM/r)</div>
             </div>
         </div>
     </div>
@@ -202,7 +207,7 @@
             }
 
             const altitude = parseInt(document.getElementById('altitude').value) * 1000;
-            const speed = parseInt(document.getElementById('speed').value);
+            const speed = parseFloat(document.getElementById('speed').value) * 1000; // Convert km/s to m/s
 
             satellite = {
                 x: EARTH_RADIUS + altitude,
@@ -213,9 +218,31 @@
             };
             
             document.getElementById('altitudeValue').textContent = (altitude/1000) + ' km';
-            document.getElementById('speedValue').textContent = speed + ' m/s';
+            document.getElementById('speedValue').textContent = (speed/1000).toFixed(2) + ' km/s';
 
             animationFrameId = requestAnimationFrame(animateOrbit);
+        }
+
+        function setCircularOrbit() {
+            const altitude = parseInt(document.getElementById('altitude').value) * 1000;
+            const r = EARTH_RADIUS + altitude;
+            const circularVelocity = Math.sqrt(G * EARTH_MASS / r) / 1000; // Convert to km/s
+            
+            document.getElementById('speed').value = circularVelocity.toFixed(2);
+            document.getElementById('speedValue').textContent = circularVelocity.toFixed(2) + ' km/s';
+            
+            resetOrbit();
+        }
+
+        function setEscapeVelocity() {
+            const altitude = parseInt(document.getElementById('altitude').value) * 1000;
+            const r = EARTH_RADIUS + altitude;
+            const escapeVelocity = Math.sqrt(2 * G * EARTH_MASS / r) / 1000; // Convert to km/s
+            
+            document.getElementById('speed').value = escapeVelocity.toFixed(2);
+            document.getElementById('speedValue').textContent = escapeVelocity.toFixed(2) + ' km/s';
+            
+            resetOrbit();
         }
 
         function drawOrbit() {
@@ -257,20 +284,21 @@
 
         function updateMetrics() {
             const r = Math.sqrt(satellite.x**2 + satellite.y**2);
-            const speed = Math.sqrt(satellite.vx**2 + satellite.vy**2);
+            const speed = Math.sqrt(satellite.vx**2 + satellite.vy**2) / 1000; // Convert to km/s
             const altitude = (r - EARTH_RADIUS) / 1000;
 
             document.getElementById('currentAltitudeValue').textContent = altitude.toFixed(0) + ' km';
-            document.getElementById('currentSpeedValue').textContent = speed.toFixed(0) + ' m/s';
+            document.getElementById('currentSpeedValue').textContent = speed.toFixed(2) + ' km/s';
 
-            const a = G * EARTH_MASS / r**2; // semi-major axis
             const period = 2 * Math.PI * Math.sqrt(r**3 / (G * EARTH_MASS)) / 60; // in minutes
             document.getElementById('periodValue').textContent = period > 0 && isFinite(period) ? period.toFixed(1) + ' min' : '-';
 
-            const escapeVelocity = Math.sqrt(2 * G * EARTH_MASS / r);
-            const circularVelocity = Math.sqrt(G * EARTH_MASS / r);
+            const escapeVelocity = Math.sqrt(2 * G * EARTH_MASS / r) / 1000; // Convert to km/s
+            const circularVelocity = Math.sqrt(G * EARTH_MASS / r) / 1000; // Convert to km/s
+            document.getElementById('escapeVelocityValue').textContent = escapeVelocity.toFixed(2) + ' km/s';
+            
             let orbitType = 'Elliptical';
-            if (Math.abs(speed - circularVelocity) < 100) orbitType = 'Circular';
+            if (Math.abs(speed - circularVelocity) < 0.1) orbitType = 'Circular';
             if (speed > escapeVelocity) orbitType = 'Hyperbolic (Escape)';
             if (speed < circularVelocity * 0.8) orbitType = 'Sub-orbital (Crash)';
             document.getElementById('orbitTypeValue').textContent = orbitType;
@@ -310,8 +338,10 @@
         }
 
         document.getElementById('altitude').addEventListener('input', e => document.getElementById('altitudeValue').textContent = e.target.value + ' km');
-        document.getElementById('speed').addEventListener('input', e => document.getElementById('speedValue').textContent = e.target.value + ' m/s');
+        document.getElementById('speed').addEventListener('input', e => document.getElementById('speedValue').textContent = e.target.value + ' km/s');
         document.getElementById('resetOrbitBtn').addEventListener('click', resetOrbit);
+        document.getElementById('circularOrbitBtn').addEventListener('click', setCircularOrbit);
+        document.getElementById('escapeVelocityBtn').addEventListener('click', setEscapeVelocity);
 
         resetOrbit();
     </script>
